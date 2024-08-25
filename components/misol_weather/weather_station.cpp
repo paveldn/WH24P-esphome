@@ -6,117 +6,6 @@
 
 namespace {
 
-std::string precipitation_to_description(float mm_per_hour) {
-  if (std::isnan(mm_per_hour)) {
-    return "Unknown";
-  } else if (mm_per_hour <= 0) {
-    return "No precipitation";
-  } else if (mm_per_hour > 0 && mm_per_hour <= 2.5) {
-    return "Light rain";
-  } else if (mm_per_hour > 2.5 && mm_per_hour <= 7.5) {
-    return "Moderate rain";
-  } else if (mm_per_hour > 7.5 && mm_per_hour <= 50) {
-    return "Heavy rain";
-  } else if (mm_per_hour > 50) {
-    return "Violent rain";
-  } else {
-    return "Extreme precipitation";
-  }
-}
-
-std::string light_level_to_description(float lux) {
-  if (lux < 2) {
-    return "Overcast night";
-  } else if (lux < 3) {
-    return "Clear night sky";
-  } else if (lux < 50) {
-    return "Rural night sky";
-  } else if (lux < 400) {
-    return "Dark overcast sky";
-  } else if (lux < 4500) {
-    return "Overcast day";
-  } else if (lux < 28500) {
-    return "Full daylight";
-  } else if (lux < 120000) {
-    return "Direct sunlight";
-  } else {
-    return "Bright direct sunlight";
-  }
-}
-
-std::string wind_speed_to_description(float speed) {
-  if (speed < 0.3) {
-    return "Calm";
-  } else if (speed >= 0.3 && speed <= 1.5) {
-    return "Light air";
-  } else if (speed > 1.5 && speed <= 3.3) {
-    return "Light breeze";
-  } else if (speed > 3.3 && speed <= 5.5) {
-    return "Gentle breeze";
-  } else if (speed > 5.5 && speed <= 7.9) {
-    return "Moderate breeze";
-  } else if (speed > 7.9 && speed <= 10.7) {
-    return "Fresh breeze";
-  } else if (speed > 10.7 && speed <= 13.8) {
-    return "Strong breeze";
-  } else if (speed > 13.8 && speed <= 17.1) {
-    return "High wind";
-  } else if (speed > 17.1 && speed <= 20.7) {
-    return "Gale";
-  } else if (speed > 20.7 && speed <= 24.4) {
-    return "Severe gale";
-  } else if (speed > 24.4 && speed <= 28.4) {
-    return "Storm";
-  } else if (speed > 28.4 && speed <= 32.6) {
-    return "Violent storm";
-  } else {
-    return "Hurricane force";
-  }
-}
-
-std::string angle_to_compass_direction(float angle, bool use_3_letter_direction = false) {
-  const char* directions[] = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-                              "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
-  uint8_t correction = use_3_letter_direction ? 0 : 1;
-  int index = static_cast<int>((angle + 11.25 * (1 + correction)) / (22.5 * (1 + correction))) % (8 * (2 - correction));
-  return directions[index * (1 + correction)];
-}
-
-std::string get_weather_condition(float temperature, float rain_intensity, float wind_strength, float solar_light_level, float humidity) {
-  std::string condition = "Clear";
-  // Temperature-based conditions
-  if (!std::isnan(temperature)) {
-    if (temperature > 30) {
-      condition = "Hot";
-    } else if (temperature < 0) {
-      condition = "Freezing";
-    }
-  }
-  // Wind strength-based conditions
-  if (!std::isnan(wind_strength) && (wind_strength > 25)) {
-    condition = "Windy";
-  }  
-  // Rain intensity-based conditions
-  if (!std::isnan(rain_intensity) && (rain_intensity > 0)) {
-    if (rain_intensity < 2.5) {
-        condition = "Light Rain";
-    } else if (rain_intensity < 7.6) {
-        condition = "Moderate Rain";
-    } else {
-        condition = "Heavy Rain";
-    }
-  }
-  // Solar light level-based conditions
-  if (!std::isnan(solar_light_level) && (solar_light_level < 25000) && (condition == "Clear")) {
-    condition = "Cloudy";
-  }
-  // Humidity-based conditions
-  if (!std::isnan(humidity) && (humidity > 90) && (condition == "Clear")) {
-    condition = "Foggy";
-  }
-  return condition;
-}
-
 bool detect_night(float uv_intensity, float lower_threshold, float upper_threshold) {
   static bool previous_result = false;
   static bool first_run = true;
@@ -250,17 +139,6 @@ void WeatherStation::process_packet_(const uint8_t *data, size_t len, bool has_p
     }
   }
 #endif  // USE_SENSOR
-#ifdef USE_TEXT_SENSOR
-  if (this->wind_direction_text_sensor_ != nullptr) {
-    uint16_t wind_direction = data[2] + (((uint16_t) (data[3] & 0x80)) << 1);
-    if (wind_direction != 0x1FF) {
-      this->wind_direction_text_sensor_->publish_state(angle_to_compass_direction(wind_direction + this->north_correction_,
-                                                                         this->secondary_intercardinal_direction_));
-    } else {
-      this->wind_direction_text_sensor_->publish_state("Unknown");
-    }
-  }
-#endif  // USE_TEXT_SENSOR
 #ifdef USE_BINARY_SENSOR
   bool low_battery = (data[3] & 0x08) != 0;
   if (this->battery_level_binary_sensor_ != nullptr) {
@@ -287,16 +165,6 @@ void WeatherStation::process_packet_(const uint8_t *data, size_t len, bool has_p
     this->wind_speed_sensor_->publish_state(wind_speed);
   }
 #endif  // USE_SENSOR
-#ifdef USE_TEXT_SENSOR
-  if (this->wind_speed_text_sensor_ != nullptr) {
-    uint16_t wind_speed = data[6] + (((uint16_t) (data[3] & 0x10)) << 4);
-    if (wind_speed != 0x1FF) {
-      this->wind_speed_text_sensor_->publish_state(wind_speed_to_description(wind_speed / 8.0 * 1.12));
-    } else {
-      this->wind_speed_text_sensor_->publish_state("Unknown");
-    }
-  }
-#endif  // USE_TEXT_SENSOR
 #ifdef USE_SENSOR
   if (this->wind_gust_sensor_ != nullptr) {
     uint8_t wind_gust = data[7];
@@ -307,7 +175,7 @@ void WeatherStation::process_packet_(const uint8_t *data, size_t len, bool has_p
     }
   }
 #endif  // USE_SENSOR
-#if defined(USE_SENSOR) || defined(USE_TEXT_SENSOR)
+#if defined(USE_SENSOR)
   bool precipitation_intensity_updated = false;
   uint16_t accumulated_precipitation = data[9] + (((uint16_t) data[8]) << 8);
   float precipitation_intensity = NAN;
@@ -325,7 +193,7 @@ void WeatherStation::process_packet_(const uint8_t *data, size_t len, bool has_p
     this->previous_precipitation_ = accumulated_precipitation;
     this->previous_precipitation_timestamp_ = now;
   }
-#endif  // USE_SENSOR || USE_TEXT_SENSOR
+#endif  // USE_SENSOR
 #ifdef USE_SENSOR
   if (this->accumulated_precipitation_sensor_ != nullptr) {
     this->accumulated_precipitation_sensor_->publish_state(accumulated_precipitation * 0.3);
@@ -334,11 +202,6 @@ void WeatherStation::process_packet_(const uint8_t *data, size_t len, bool has_p
     this->precipitation_intensity_sensor_->publish_state(precipitation_intensity);
   }
 #endif  // USE_SENSOR
-#ifdef USE_TEXT_SENSOR
-  if ((this->precipitation_intensity_text_sensor_ != nullptr) && (precipitation_intensity_updated)) {
-    this->precipitation_intensity_text_sensor_->publish_state(precipitation_to_description(precipitation_intensity));
-  }
-#endif  // USE_TEXT_SENSOR
   unsigned int uv_intensity_val = data[11] + (((uint16_t) data[10]) << 8);
   float uv_intensity = (uv_intensity_val != 0xFFFF) ? uv_intensity_val / 10.0 : NAN;
 #ifdef USE_SENSOR
@@ -367,21 +230,7 @@ void WeatherStation::process_packet_(const uint8_t *data, size_t len, bool has_p
     this->light_sensor_->publish_state(light);
   }
 #endif  // USE_SENSOR
-#ifdef USE_TEXT_SENSOR
-  if (this->light_text_sensor_ != nullptr) {
-    uint32_t light = (data[14] + (data[13] << 8) + (data[12] << 16));
-    if (light != 0xFFFFFF) {
-      this->light_text_sensor_->publish_state(light_level_to_description(light / 10.0));
-    } else {
-      this->light_text_sensor_->publish_state("Unknown");
-    }
-  }
-#endif  // USE_TEXT_SENSOR
-#ifdef USE_TEXT_SENSOR
-  if (this->weather_conditions_text_sensor_ != nullptr) {
-    this->weather_conditions_text_sensor_->publish_state(get_weather_condition(temperature, precipitation_intensity, wind_speed, light, humidity));
-  }
 }
-#endif  // USE_TEXT_SENSOR
+
 }  // namespace misol_weather
 }  // namespace esphome

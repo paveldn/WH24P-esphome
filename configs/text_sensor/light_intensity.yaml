@@ -1,0 +1,28 @@
+﻿# Text sensor for light intensity
+# Depend on the light sensor from the misol_weather integration
+text_sensor:
+  - platform: template
+    name: "${device_name} Light Intensity Text"
+    id: ${device_id}_light_intensity_text
+    icon: "mdi:weather-sunny"
+    update_interval: 20s
+    lambda: |-
+      auto lux = id(${device_id}_light)->state;
+      if (lux < 2) {
+        return { "Overcast night" };
+      } else if (lux < 3) {
+        return { "Clear night sky" };
+      } else if (lux < 50) {
+        return { "Rural night sky" };
+      } else if (lux < 400) {
+        return { "Dark overcast sky" };
+      } else if (lux < 4500) {
+        return { "Overcast day" };
+      } else if (lux < 28500) {
+        return { "Full daylight" };
+      } else if (lux < 120000) {
+        return { "Direct sunlight" };
+      } else {
+        return { "Bright direct sunlight" };
+      }
+

@@ -1,0 +1,48 @@
+﻿# Text sensor for light intensity
+# Depend on the light sensor from the misol_weather integration
+text_sensor:
+  - platform: template
+    name: "${device_name} Weather Conditions"
+    id: ${device_id}_weather_conditions_text
+    icon: "mdi:weather-partly-cloudy"
+    update_interval: 20s
+    lambda: |-
+      auto temperature = id(weather_station_temperature)->state;
+      auto humidity = id(weather_station_humidity)->state;
+      auto wind_strength = id(weather_station_wind_speed)->state;
+      auto rain_intensity = id(weather_station_precipitation_intensity)->state;
+      auto solar_light_level = id(weather_station_light)->state;
+      std::string condition = "Clear";
+      // Temperature-based conditions
+      if (!std::isnan(temperature)) {
+        if (temperature > 30) {
+          condition = "Hot";
+        } else if (temperature < 0) {
+          condition = "Freezing";
+        }
+      }
+      // Wind strength-based conditions
+      if (!std::isnan(wind_strength) && (wind_strength > 25)) {
+        condition = "Windy";
+      }  
+      // Rain intensity-based conditions
+      if (!std::isnan(rain_intensity) && (rain_intensity > 0)) {
+        if (rain_intensity < 2.5) {
+            condition = "Light Rain";
+        } else if (rain_intensity < 7.6) {
+            condition = "Moderate Rain";
+        } else {
+            condition = "Heavy Rain";
+        }
+      }
+      // Solar light level-based conditions
+      if (!std::isnan(solar_light_level) && (solar_light_level < 25000) && (condition == "Clear")) {
+        condition = "Cloudy";
+      }
+      // Humidity-based conditions
+      if (!std::isnan(humidity) && (humidity > 90) && (condition == "Clear")) {
+        condition = "Foggy";
+      }
+      return condition;
+
+

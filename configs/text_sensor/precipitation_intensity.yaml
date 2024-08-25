@@ -1,0 +1,26 @@
+﻿# Text sensor for precipitation intensity
+# Depend on the percentage intensity sensor from the misol_weather integration
+text_sensor:
+  - platform: template
+    name: "${device_name} Precipitation Intensity Text"
+    id: ${device_id}_precipitation_intensity_text
+    icon: "mdi:weather-pouring"
+    update_interval: 20s
+    lambda: |-
+      auto mm_per_hour = id(${device_id}_precipitation_intensity)->state;
+      if (std::isnan(mm_per_hour)) {
+        return { "Unknown" };
+      } else if (mm_per_hour <= 0) {
+        return { "No precipitation" };
+      } else if (mm_per_hour > 0 && mm_per_hour <= 2.5) {
+        return { "Light rain" };
+      } else if (mm_per_hour > 2.5 && mm_per_hour <= 7.5) {
+        return { "Moderate rain" };
+      } else if (mm_per_hour > 7.5 && mm_per_hour <= 50) {
+        return { "Heavy rain" };
+      } else if (mm_per_hour > 50) {
+        return { "Violent rain" };
+      } else {
+        return { "Extreme precipitation" };
+      }
+

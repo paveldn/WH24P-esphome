@@ -1,0 +1,16 @@
+﻿# Text sensor for wind direction, with 2 or 3 letter direction names
+# Depend on the wind direction sensor from the misol_weather integration
+text_sensor:
+  - platform: template
+    name: "${device_name} Wind Direction Text"
+    id: ${device_id}_wind_direction_text
+    icon: "mdi:compass"
+    update_interval: 20s
+    lambda: |-
+        // Set next value to true if you want to use 3-letter direction names (NNE, ENE, etc.)
+        const bool use_3_letter_direction = false;
+        const char* directions[] = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+                                    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
+        uint8_t correction = use_3_letter_direction ? 0 : 1;
+        int index = static_cast<int>((id(${device_id}_wind_direction).state + 11.25 * (1 + correction)) / (22.5 * (1 + correction))) % (8 * (2 - correction));
+        return { directions[index * (1 + correction)] };

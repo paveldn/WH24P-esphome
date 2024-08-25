@@ -46,17 +46,9 @@ binary_sensor:
         upper: 5.5
         lower: 4.5
 
-text_sensor:
-  - platform: misol_weather
-    wind_direction:
-      name: Weather station Wind Direction Text
-      north_correction: 0
-      secondary_intercardinal_direction: true
-    wind_speed:
-      name: Weather station Wind Speed Text
-    light:
-      name: Weather station Light Text
-    precipitation_intensity:
-      name: Weather station Precipitation Intensity Text
-    weather_conditions:
-      name: Weather station Weather Conditions Text
+packages:
+  wind_direction_text: !include configs/text_sensor/wind_direction.yaml
+  wind_speed_text: !include configs/text_sensor/wind_speed.yaml
+  light_intensity_text: !include configs/text_sensor/light_intensity.yaml
+  precipitation_intensity_text: !include configs/text_sensor/precipitation_intensity.yaml
+  weather_conditions_text: !include configs/text_sensor/weather_conditions.yaml
